@@ -1,0 +1,7 @@
+{
+  "name": "SafeWord Alert Nigeria",
+  "description": "Secure safe word communication for combating insecurity in Nigeria with encrypted messaging, stealth calculator disguise, and real-time geolocation alerts.",
+  "requestFramePermissions": ["geolocation", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
