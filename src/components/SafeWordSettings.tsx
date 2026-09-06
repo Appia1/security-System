@@ -12,7 +12,8 @@ import {
   Sparkles,
   Info,
   Lock,
-  MessageSquare
+  MessageSquare,
+  KeyRound
 } from 'lucide-react';
 import { UserProfile, EmergencyContact, DistressAlert } from '../types';
 import { StorageService } from '../services/storage';
@@ -33,6 +34,10 @@ export const SafeWordSettings: React.FC<SafeWordSettingsProps> = ({
   onUserUpdated,
   onAlertDispatched,
 }) => {
+  const defaultEmergencyDigits = currentUser.emergencyId?.split('-')[1] || '829104';
+  const [unlockPin, setUnlockPin] = useState<string>(
+    currentUser.unlockPin || defaultEmergencyDigits
+  );
   const [safeWord, setSafeWord] = useState<string>(currentUser.safeWord || 'Red Umbrella');
   const [safeText, setSafeText] = useState<string>(currentUser.safeText || 'Bring the textbook');
   const [isListening, setIsListening] = useState<boolean>(false);
@@ -108,12 +113,23 @@ export const SafeWordSettings: React.FC<SafeWordSettingsProps> = ({
     }
   };
 
+  const [pinError, setPinError] = useState<string>('');
+
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
+    setPinError('');
+
+    const cleanPin = unlockPin.trim().replace(/\D/g, '');
+    if (!cleanPin || cleanPin.length < 4 || cleanPin.length > 8) {
+      setPinError('Unlock PIN must be between 4 and 8 numeric digits.');
+      return;
+    }
+
     const updated: UserProfile = {
       ...currentUser,
       safeWord: safeWord.trim(),
       safeText: safeText.trim(),
+      unlockPin: cleanPin,
     };
     StorageService.setCurrentUser(updated);
     onUserUpdated(updated);
@@ -259,6 +275,42 @@ export const SafeWordSettings: React.FC<SafeWordSettingsProps> = ({
 
             <form onSubmit={handleSaveSettings} className="space-y-4 text-xs">
               
+              {/* Covert Calculator Unlock PIN */}
+              <div className="p-3.5 rounded-xl bg-[#09090B] border border-amber-500/30">
+                <label className="block text-[#E4E4E7] font-semibold mb-1 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                    Calculator Unlock PIN <span className="text-amber-400">*</span>
+                  </span>
+                  <span className="text-[10px] text-amber-300 font-mono">4–8 digits</span>
+                </label>
+                <input
+                  type="text"
+                  maxLength={8}
+                  required
+                  value={unlockPin}
+                  onChange={(e) => setUnlockPin(e.target.value.replace(/\D/g, ''))}
+                  placeholder="e.g., 829104 or set your own"
+                  className="w-full bg-[#18181B] border border-[#27272A] rounded-lg px-3 py-2 text-white font-mono text-base font-bold placeholder-[#71717A] focus:outline-none focus:border-amber-500 tracking-wider"
+                />
+                {pinError && (
+                  <p className="text-[11px] text-red-400 mt-1 font-medium">{pinError}</p>
+                )}
+                <p className="text-[10px] text-[#71717A] mt-1.5 leading-relaxed">
+                  Type this exact numeric PIN on the covert calculator keypad at any time to unlock your full safety dashboard.
+                </p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-[10px] text-[#71717A]">Quick reset:</span>
+                  <button
+                    type="button"
+                    onClick={() => setUnlockPin(defaultEmergencyDigits)}
+                    className="text-[10px] px-2 py-0.5 rounded-md bg-[#27272A] hover:bg-[#3F3F46] text-amber-300 border border-[#3F3F46] cursor-pointer"
+                  >
+                    Reset to Emergency ID Digits ({defaultEmergencyDigits})
+                  </button>
+                </div>
+              </div>
+
               {/* Safe Word (Voice Trigger) */}
               <div>
                 <label className="block text-[#E4E4E7] font-semibold mb-1 flex items-center justify-between">

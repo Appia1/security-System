@@ -86,6 +86,37 @@ export class StorageService {
     return null;
   }
 
+  // Get current active user, or create a clean primary profile if none exists yet
+  static getOrCreateCurrentUser(): UserProfile {
+    const existing = StorageService.getCurrentUser();
+    if (existing && existing.emergencyId) {
+      return existing;
+    }
+    const all = StorageService.getAllUsers();
+    if (all.length > 0 && all[0].emergencyId) {
+      StorageService.setCurrentUser(all[0]);
+      return all[0];
+    }
+    const defaultUser: UserProfile = {
+      id: 'usr-default',
+      surname: 'BELLO',
+      firstName: 'Safety User',
+      phone: '+234 800 123 4567',
+      email: 'user@safeword.ng',
+      emergencyId: 'BELLO-829104',
+      state: 'Lagos State',
+      lga: 'Ikeja',
+      createdAt: Date.now(),
+      safeWord: 'Red Umbrella',
+      safeText: 'Bring the textbook',
+      unlockPin: '829104',
+      isListeningSafeWord: false,
+      avatarColor: 'from-emerald-600 to-teal-700',
+    };
+    StorageService.setCurrentUser(defaultUser);
+    return defaultUser;
+  }
+
   // Sign out current user
   static signOut(): void {
     localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
@@ -119,8 +150,12 @@ export class StorageService {
     lga?: string;
     safeWord?: string;
     safeText?: string;
+    unlockPin?: string;
   }): UserProfile {
     const emergencyId = generateEmergencyId(userData.surname);
+    const emergencyDigits = emergencyId.split('-')[1] || '829104';
+    const chosenPin = userData.unlockPin?.trim().replace(/\D/g, '') || emergencyDigits;
+
     const colors = [
       'from-blue-600 to-indigo-700',
       'from-emerald-600 to-teal-700',
@@ -142,6 +177,7 @@ export class StorageService {
       createdAt: Date.now(),
       safeWord: userData.safeWord || 'Red Umbrella',
       safeText: userData.safeText || 'Bring the textbook',
+      unlockPin: chosenPin,
       isListeningSafeWord: false,
       avatarColor,
     };

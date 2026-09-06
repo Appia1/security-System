@@ -10,6 +10,7 @@ export interface UserProfile {
   createdAt: number;
   safeWord: string; // Voice duress trigger
   safeText: string; // Text duress trigger
+  unlockPin?: string; // Custom 4-8 digit calculator unlock PIN
   isListeningSafeWord: boolean;
   avatarColor: string;
 }

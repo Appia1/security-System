@@ -14,12 +14,17 @@ import { UserProfile, EmergencyContact, DistressAlert } from './types';
 import { StorageService } from './services/storage';
 import { globalVoiceDetector } from './services/voiceRecognition';
 import { subscribeToFirestoreAlerts } from './services/firebase';
-import { ShieldCheck, PhoneCall, Radio, AlertOctagon } from 'lucide-react';
+import { ShieldCheck, PhoneCall } from 'lucide-react';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => StorageService.getCurrentUser());
+  // Always start in covert calculator mode every single time the app opens or refreshes
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(false);
+  
+  const [currentUser, setCurrentUser] = useState<UserProfile>(() => 
+    StorageService.getOrCreateCurrentUser()
+  );
   const [contacts, setContacts] = useState<EmergencyContact[]>(() => 
-    currentUser ? StorageService.getContactsForUser(currentUser.emergencyId) : []
+    StorageService.getContactsForUser(currentUser.emergencyId)
   );
   const [alerts, setAlerts] = useState<DistressAlert[]>(() => StorageService.getAllAlerts());
   const [currentTab, setCurrentTab] = useState<'calculator' | 'contacts' | 'notifications' | 'safewords'>('calculator');
@@ -31,8 +36,6 @@ export default function App() {
     if (currentUser) {
       const userContacts = StorageService.getContactsForUser(currentUser.emergencyId);
       setContacts(userContacts);
-    } else {
-      setContacts([]);
     }
   }, [currentUser?.emergencyId]);
 
@@ -81,41 +84,57 @@ export default function App() {
 
   const handleSignOut = () => {
     StorageService.signOut();
-    setCurrentUser(null);
-    setContacts([]);
+    const fallbackUser = StorageService.getOrCreateCurrentUser();
+    setCurrentUser(fallbackUser);
+    setContacts(StorageService.getContactsForUser(fallbackUser.emergencyId));
+    setIsUnlocked(false);
   };
 
   const handleAlertDispatched = (newAlert: DistressAlert) => {
     setAlerts(StorageService.getAllAlerts());
   };
 
-  // MANDATORY SECURITY GATE: If not logged in, user must sign up or sign in before getting an Emergency ID
-  if (!currentUser) {
+  // =========================================================================
+  // STEALTH MODE: Every time the user opens the software, show ONLY Calculator
+  // No navbar, no tabs, no sidebars, subtle silent distress button at the down part.
+  // New users can tap registration or type 0000 to obtain their Emergency ID & PIN.
+  // =========================================================================
+  if (!isUnlocked) {
     return (
-      <div className="min-h-screen bg-[#0A0A0B] text-[#E4E4E7] flex flex-col justify-between font-['Plus_Jakarta_Sans',sans-serif]">
-        <AuthModal
-          isOpen={true}
-          isGate={true}
-          onUserLoggedIn={(user) => {
-            setCurrentUser(user);
-            setContacts(StorageService.getContactsForUser(user.emergencyId));
-          }}
+      <>
+        <Calculator
+          currentUser={currentUser}
+          contacts={contacts}
+          alerts={alerts}
+          isUnlocked={false}
+          onUnlock={() => setIsUnlocked(true)}
+          onAlertDispatched={handleAlertDispatched}
+          onOpenSafeSettings={() => {}}
+          onOpenContacts={() => {}}
+          onOpenAuth={() => setIsAuthOpen(true)}
         />
 
-        {/* Minimal Footer during Auth Gate */}
-        <footer className="border-t border-[#27272A] bg-[#0A0A0B] py-4 px-4 text-xs text-[#71717A] text-center">
-          <p className="max-w-md mx-auto">
-            SafeWord Alert NG &bull; Encrypted Geolocation Distress Protocol &bull; Toll-Free Hotline: <a href="tel:112" className="text-red-400 font-bold">112</a>
-          </p>
-        </footer>
-      </div>
+        {/* Profile Registration / Sign In Modal accessible from covert screen */}
+        <AuthModal
+          isOpen={isAuthOpen}
+          onClose={() => setIsAuthOpen(false)}
+          onUserLoggedIn={(user) => {
+            handleUserSwitch(user);
+            setIsUnlocked(true);
+            setIsAuthOpen(false);
+          }}
+        />
+      </>
     );
   }
 
+  // =========================================================================
+  // UNLOCKED MODE: Displays full application when emergency PIN is typed
+  // =========================================================================
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-[#E4E4E7] flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
       
-      {/* Top Navigation Bar */}
+      {/* Top Navigation Bar with Lock Button */}
       <Navbar
         currentUser={currentUser}
         contactsCount={contacts.length}
@@ -125,6 +144,7 @@ export default function App() {
         onOpenAuth={() => setIsAuthOpen(true)}
         onUserSwitch={handleUserSwitch}
         onSignOut={handleSignOut}
+        onLockApp={() => setIsUnlocked(false)}
         isMicActive={isMicActive}
       />
 
@@ -135,6 +155,9 @@ export default function App() {
             currentUser={currentUser}
             contacts={contacts}
             alerts={alerts}
+            isUnlocked={true}
+            onUnlock={() => {}}
+            onLock={() => setIsUnlocked(false)}
             onAlertDispatched={handleAlertDispatched}
             onOpenSafeSettings={() => setCurrentTab('safewords')}
             onOpenContacts={() => setCurrentTab('contacts')}
@@ -169,7 +192,7 @@ export default function App() {
         )}
       </main>
 
-      {/* User Signup / Signin Modal */}
+      {/* Profile Registration / Switcher Modal */}
       <AuthModal
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
@@ -179,27 +202,25 @@ export default function App() {
         }}
       />
 
-      {/* Bottom Emergency Quick Reference Bar */}
-      <footer className="border-t border-[#27272A] bg-[#0A0A0B] py-4 px-4 text-xs text-[#71717A]">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          
+      {/* Clean, Discreet Bottom Footer */}
+      <footer className="border-t border-[#27272A] bg-[#0A0A0B] py-3.5 px-4 text-xs text-[#71717A]">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
           <div className="flex items-center gap-2 text-center sm:text-left">
             <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
             <span className="text-[#A1A1AA]">
-              <strong className="text-white">SafeWord Alert NG:</strong> Combating insecurity in Nigeria with real-time encrypted geolocation protocols.
+              SafeWord Alert NG &bull; Encrypted Geolocation Protocols
             </span>
           </div>
 
-          <div className="flex items-center gap-4 flex-wrap justify-center font-mono text-[11px]">
-            <span className="text-[#71717A]">Emergency Hotlines:</span>
-            <a href="tel:112" className="text-red-400 hover:text-red-300 font-bold flex items-center gap-1">
-              <PhoneCall className="w-3 h-3" /> Toll-Free 112
+          <div className="flex items-center gap-4 font-mono text-[11px]">
+            <span>Hotlines:</span>
+            <a href="tel:112" className="text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1">
+              <PhoneCall className="w-3 h-3" /> 112
             </a>
-            <a href="tel:199" className="text-orange-400 hover:text-orange-300 font-bold flex items-center gap-1">
-              <PhoneCall className="w-3 h-3" /> Police 199
+            <a href="tel:199" className="text-[#A1A1AA] hover:text-white font-semibold flex items-center gap-1">
+              <PhoneCall className="w-3 h-3" /> 199
             </a>
           </div>
-
         </div>
       </footer>
 

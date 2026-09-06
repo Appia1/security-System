@@ -344,10 +344,10 @@ export const ContactsManager: React.FC<ContactsManagerProps> = ({
                       </div>
                     </div>
 
-                    {/* Delete / Remove contact button (Required by prompt) */}
+                    {/* Delete / Remove contact button */}
                     <button
                       onClick={() => handleRemoveContact(contact.id, contact.name)}
-                      className="self-end sm:self-center flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#18181B] hover:bg-red-950/60 text-[#71717A] hover:text-red-400 border border-[#27272A] hover:border-red-800 transition-colors text-xs font-semibold cursor-pointer"
+                      className="self-end sm:self-center flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#18181B] hover:bg-[#27272A] text-[#71717A] hover:text-rose-300 border border-[#27272A] hover:border-[#3F3F46] transition-colors text-xs font-semibold cursor-pointer"
                       title="Remove from Emergency List"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -359,11 +359,11 @@ export const ContactsManager: React.FC<ContactsManagerProps> = ({
             )}
 
             {/* Information Notice */}
-            <div className="mt-5 p-3 rounded-xl bg-[#09090B] border border-[#27272A] text-[11px] text-[#71717A] flex items-start gap-2.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <div className="mt-5 p-3 rounded-xl bg-[#09090B] border border-[#27272A] text-[11px] text-[#71717A] flex items-center gap-2.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
               <div>
-                <span className="font-semibold text-emerald-400">Targeted Emergency Contacts Only: </span>
-                Whenever you trigger a distress event (Covert Calculator, Safe Word, or Safe Text), your encrypted distress message and live GPS location will ONLY be sent to the specific Emergency IDs added above (and yourself). Other users of the software can never view or intercept your location.
+                <span className="font-semibold text-emerald-400">Targeted Privacy: </span>
+                Alerts and live GPS location are only sent to your saved emergency IDs.
               </div>
             </div>
 

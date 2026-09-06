@@ -11,7 +11,8 @@ import {
   UserCheck, 
   MapPin,
   ChevronDown,
-  LogOut
+  LogOut,
+  Lock
 } from 'lucide-react';
 import { UserProfile, DistressAlert } from '../types';
 import { StorageService } from '../services/storage';
@@ -25,6 +26,7 @@ interface NavbarProps {
   onOpenAuth: () => void;
   onUserSwitch: (user: UserProfile) => void;
   onSignOut?: () => void;
+  onLockApp?: () => void;
   isMicActive: boolean;
 }
 
@@ -37,6 +39,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAuth,
   onUserSwitch,
   onSignOut,
+  onLockApp,
   isMicActive,
 }) => {
   const [copied, setCopied] = useState(false);
@@ -176,8 +179,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </div>
 
-          {/* User Profile & Switcher */}
+          {/* User Profile & Lock Switcher */}
           <div className="flex items-center gap-2">
+            {onLockApp && (
+              <button
+                onClick={onLockApp}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#18181B] hover:bg-[#27272A] border border-[#27272A] hover:border-amber-500/40 text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
+                title="Lock back to covert calculator"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Lock</span>
+              </button>
+            )}
+
             <div className="relative">
               <button
                 onClick={() => setShowSwitchMenu(!showSwitchMenu)}
@@ -317,6 +331,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Mic className={`w-4 h-4 ${isMicActive ? 'text-emerald-400 animate-pulse' : 'text-purple-400'}`} />
             <span className="text-[11px]">Duress</span>
           </button>
+
+          {onLockApp && (
+            <button
+              onClick={onLockApp}
+              className="flex flex-col sm:flex-row items-center justify-center gap-1 px-2.5 py-2 rounded-lg shrink-0 cursor-pointer min-h-[44px] text-amber-400 hover:text-amber-300 transition-colors"
+              title="Lock to Calculator"
+            >
+              <Lock className="w-4 h-4" />
+              <span className="text-[11px]">Lock</span>
+            </button>
+          )}
         </div>
 
       </div>

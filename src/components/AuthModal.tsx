@@ -57,6 +57,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [state, setState] = useState('Lagos State');
   const [safeWord, setSafeWord] = useState('Red Umbrella');
   const [safeText, setSafeText] = useState('Bring the textbook');
+  const [customUnlockPin, setCustomUnlockPin] = useState('');
 
   // Signin fields
   const [signinId, setSigninId] = useState('');
@@ -89,6 +90,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
+    if (customUnlockPin.trim() && !/^\d{4,8}$/.test(customUnlockPin.trim())) {
+      setErrorMsg('Unlock PIN must be between 4 and 8 numeric digits (or leave blank to use ID digits).');
+      return;
+    }
+
     try {
       const newUser = StorageService.registerUser({
         surname,
@@ -98,13 +104,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         state,
         safeWord,
         safeText,
+        unlockPin: customUnlockPin.trim() || undefined,
       });
 
-      setSuccessMsg(`Welcome ${newUser.firstName}! Your Emergency ID is ${newUser.emergencyId}`);
+      const pinUsed = newUser.unlockPin || newUser.emergencyId.split('-')[1];
+      setSuccessMsg(`Welcome ${newUser.firstName}! Your Emergency ID is ${newUser.emergencyId} and your Calculator Unlock PIN is ${pinUsed}.`);
       setTimeout(() => {
         onUserLoggedIn(newUser);
         if (onClose) onClose();
-      }, 1200);
+      }, 1400);
     } catch {
       setErrorMsg('Registration failed. Please try again.');
     }
@@ -318,8 +326,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             <div className="pt-2 border-t border-[#27272A]">
               <span className="text-[11px] font-bold text-[#71717A] uppercase tracking-wider block mb-2">
-                Initial Duress Security Credentials
+                Calculator Unlock & Duress Credentials
               </span>
+
+              {/* Custom Unlock PIN Field */}
+              <div className="mb-3 p-3 rounded-xl bg-[#09090B] border border-[#27272A]">
+                <label className="block text-[#E4E4E7] font-semibold mb-1 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                    Calculator Unlock PIN (Optional)
+                  </span>
+                  <span className="text-[10px] text-[#71717A]">4 to 8 digits</span>
+                </label>
+                <input
+                  type="text"
+                  maxLength={8}
+                  value={customUnlockPin}
+                  onChange={(e) => setCustomUnlockPin(e.target.value.replace(/\D/g, ''))}
+                  placeholder="e.g., 829104 or set your own like 2024"
+                  className="w-full bg-[#18181B] border border-[#27272A] rounded-lg px-3 py-2 text-white font-mono placeholder-[#71717A] focus:outline-none focus:border-amber-500 text-xs"
+                />
+                <p className="text-[10px] text-[#71717A] mt-1">
+                  Type these digits on the covert calculator to unlock the app. If left empty, your PIN will automatically be the 6 digits generated with your Emergency ID.
+                </p>
+              </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -348,7 +378,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             <button
               type="submit"
-              className="w-full py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs transition-colors shadow-lg cursor-pointer mt-2"
+              className="w-full py-2.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition-colors shadow-lg cursor-pointer mt-2"
             >
               Generate Emergency ID & Create Account
             </button>
