@@ -4,6 +4,7 @@ import {
   MapPin, 
   ExternalLink, 
   ShieldAlert, 
+  ShieldCheck,
   CheckCircle2, 
   Clock, 
   Lock, 
@@ -35,8 +36,20 @@ export const NotificationsCenter: React.FC<NotificationsCenterProps> = ({
   const [copiedCoords, setCopiedCoords] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'active' | 'acknowledged'>('all');
 
-  // Filter alerts relevant to this user or sent by this user
-  const relevantAlerts = alerts.filter(a => {
+  // STRICT PRIVACY ENFORCEMENT:
+  // Distress messages and geolocation are ONLY received by:
+  // 1. The sender who triggered the distress (to monitor their active transmission)
+  // 2. The explicit emergency contacts specified in respondersNotified
+  // Any user not in the sender's contacts list is strictly blocked from receiving or viewing this data!
+  const userPermittedAlerts = alerts.filter(a => {
+    const cleanCurrentId = currentUser.emergencyId?.trim().toUpperCase();
+    const isSender = a.senderEmergencyId?.trim().toUpperCase() === cleanCurrentId;
+    const isTargetedContact = Array.isArray(a.respondersNotified) &&
+      a.respondersNotified.some(id => id?.trim().toUpperCase() === cleanCurrentId);
+    return isSender || isTargetedContact;
+  });
+
+  const relevantAlerts = userPermittedAlerts.filter(a => {
     if (filter === 'active' && a.status !== 'active') return false;
     if (filter === 'acknowledged' && a.status !== 'acknowledged') return false;
     return true;
@@ -58,44 +71,6 @@ export const NotificationsCenter: React.FC<NotificationsCenterProps> = ({
     setTimeout(() => setCopiedCoords(null), 2000);
   };
 
-  // Quick button to simulate an incoming emergency alert from another user
-  const handleSimulateIncomingAlert = () => {
-    const randomLats = [6.5244, 9.0765, 10.5105, 4.8156, 7.3775];
-    const randomLngs = [3.3792, 7.3986, 7.4165, 7.0498, 3.9470];
-    const randomCities = ['Lagos (Victoria Island)', 'Abuja (Maitama)', 'Kaduna (Barnawa)', 'Port Harcourt (GRA)', 'Ibadan (Bodija)'];
-    const idx = Math.floor(Math.random() * randomLats.length);
-
-    const mockAlert: DistressAlert = {
-      id: 'alt-sim-' + Date.now(),
-      senderEmergencyId: 'CHUKWU-719302',
-      senderName: 'Emeka Chukwu',
-      senderPhone: '+234 812 998 3344',
-      timestamp: Date.now(),
-      triggerType: 'safe_word',
-      triggerDetail: 'Voice Safe Word Spoken: "Mayday Nigeria"',
-      location: {
-        lat: randomLats[idx],
-        lng: randomLngs[idx],
-        accuracy: 12,
-        addressHint: `Expressway Near Tollgate, ${randomCities[idx]}`,
-        city: randomCities[idx].split(' ')[0],
-        state: 'Nigeria Security Sector',
-        timestamp: Date.now(),
-        isMock: true,
-      },
-      status: 'active',
-      acknowledgedBy: [],
-      respondersNotified: [currentUser.emergencyId, 'POLICE-112099'],
-      encryptedPayload: 'AES256GCM:a7b8c9d0e1f2...[VERIFIED_PAYLOAD]',
-      encryptionHash: 'c7be025e76d802877b3...[SHA256_MATCH]',
-      encryptionAlgorithm: 'AES-256-GCM',
-      notes: 'Real-time alert triggered via safe word voice detection.',
-    };
-
-    StorageService.dispatchDistressAlert(mockAlert);
-    onAlertsUpdated();
-  };
-
   return (
     <div className="w-full max-w-5xl mx-auto py-4 sm:py-6 px-3 sm:px-6">
       
@@ -110,20 +85,25 @@ export const NotificationsCenter: React.FC<NotificationsCenterProps> = ({
               </h1>
             </div>
             <p className="text-xs text-[#71717A] mt-1">
-              Real-time incoming distress alerts indicating <strong className="text-red-400">&quot;NEEDS HELP LOCATION&quot;</strong> with verified GPS coordinates, encrypted payload signatures, and navigation shortcuts.
+              Targeted distress alerts indicating <strong className="text-red-400">&quot;NEEDS HELP LOCATION&quot;</strong> with verified GPS coordinates and navigation shortcuts.
             </p>
           </div>
 
-          {/* Quick Simulate Alert action for tester convenience */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleSimulateIncomingAlert}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-200 border border-red-800 text-xs font-semibold transition-colors shadow-sm cursor-pointer"
-              title="Simulate incoming alert from another emergency ID"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>Simulate Test Alert</span>
-            </button>
+            <span className="text-xs font-mono font-bold px-3 py-1.5 rounded-xl bg-[#09090B] border border-[#27272A] text-emerald-400">
+              ID: {currentUser.emergencyId}
+            </span>
+          </div>
+        </div>
+
+        {/* Targeted Dispatch Guarantee Banner */}
+        <div className="mt-4 p-3 rounded-xl bg-emerald-950/25 border border-emerald-800/40 text-xs text-emerald-200/90 flex items-start gap-2.5">
+          <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold text-emerald-300">Targeted Privacy Protocol Active</p>
+            <p className="text-[11px] text-[#A1A1AA] mt-0.5">
+              Distress alerts and GPS locations are strictly dispatched <strong>only to the sender&apos;s verified Emergency Contacts</strong>. Unrelated users on the network cannot access or view your location.
+            </p>
           </div>
         </div>
 
@@ -136,7 +116,7 @@ export const NotificationsCenter: React.FC<NotificationsCenterProps> = ({
                 filter === 'all' ? 'bg-[#27272A] text-white font-semibold' : 'text-[#71717A] hover:text-white'
               }`}
             >
-              All Alerts ({alerts.length})
+              All Alerts ({userPermittedAlerts.length})
             </button>
             <button
               onClick={() => setFilter('active')}
@@ -144,7 +124,7 @@ export const NotificationsCenter: React.FC<NotificationsCenterProps> = ({
                 filter === 'active' ? 'bg-red-950/60 text-red-300 font-semibold border border-red-800' : 'text-[#71717A] hover:text-white'
               }`}
             >
-              Active Needs Help ({alerts.filter(a => a.status === 'active').length})
+              Active Needs Help ({userPermittedAlerts.filter(a => a.status === 'active').length})
             </button>
             <button
               onClick={() => setFilter('acknowledged')}
@@ -152,7 +132,7 @@ export const NotificationsCenter: React.FC<NotificationsCenterProps> = ({
                 filter === 'acknowledged' ? 'bg-[#27272A] text-white font-semibold' : 'text-[#71717A] hover:text-white'
               }`}
             >
-              Acknowledged ({alerts.filter(a => a.status === 'acknowledged').length})
+              Acknowledged ({userPermittedAlerts.filter(a => a.status === 'acknowledged').length})
             </button>
           </div>
 
@@ -168,15 +148,11 @@ export const NotificationsCenter: React.FC<NotificationsCenterProps> = ({
           <CheckCircle2 className="w-12 h-12 mx-auto mb-3 text-emerald-500/60" />
           <p className="font-bold text-base text-[#E4E4E7]">All Secure — No Active Distress Alerts</p>
           <p className="mt-1 text-[#71717A] max-w-md mx-auto">
-            When a user on your emergency contacts list triggers their silent distress button, safe word, or safe text, their emergency location notification will appear here immediately.
+            Emergency notifications and GPS locations are only transmitted to users who have been explicitly designated in the sender&apos;s Emergency Contacts list.
           </p>
-          <button
-            onClick={handleSimulateIncomingAlert}
-            className="mt-4 px-4 py-2 rounded-xl bg-[#27272A] hover:bg-[#3F3F46] text-white font-semibold text-xs transition-colors inline-flex items-center gap-1.5 cursor-pointer"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            Generate Sample Distress Alert
-          </button>
+          <p className="mt-2 text-[11px] text-[#52525B] max-w-sm mx-auto font-mono">
+            Your Emergency ID: {currentUser.emergencyId}
+          </p>
         </div>
       ) : (
         <div className="space-y-4">

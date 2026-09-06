@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+/* Suppress Netlify feedback widget, drawer, and floating badges */
+netlify-drawer,
+#netlify-drawer,
+[data-netlify-drawer],
+.netlify-badge,
+[id^="netlify-feedback"],
+iframe[id^="netlify-drawer"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -9999 !important;
+}

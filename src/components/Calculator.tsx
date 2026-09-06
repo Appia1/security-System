@@ -11,7 +11,6 @@ import {
   Copy, 
   Check, 
   ExternalLink,
-  Flame,
   Zap,
   Navigation,
   Sparkles
@@ -29,7 +28,6 @@ interface CalculatorProps {
   onOpenSafeSettings: () => void;
   onOpenContacts: () => void;
   onOpenNotifications?: () => void;
-  onOpenFirebaseGuide?: () => void;
   onContactsUpdated?: (contacts: EmergencyContact[]) => void;
 }
 
@@ -41,7 +39,6 @@ export const Calculator: React.FC<CalculatorProps> = ({
   onOpenSafeSettings,
   onOpenContacts,
   onOpenNotifications,
-  onOpenFirebaseGuide,
   onContactsUpdated,
 }) => {
   // Calculator state
@@ -258,9 +255,17 @@ export const Calculator: React.FC<CalculatorProps> = ({
     }
   };
 
-  // Recent incoming alerts to show in the Live Incoming Alerts card
+  // Strict privacy filter:
+  // Only show alerts where currentUser is the sender OR was designated as a responder by the sender
   const activeIncomingAlerts = alerts
-    .filter(a => a.status === 'active')
+    .filter(a => {
+      if (a.status !== 'active') return false;
+      const cleanCurrentId = currentUser.emergencyId?.trim().toUpperCase();
+      const isSender = a.senderEmergencyId?.trim().toUpperCase() === cleanCurrentId;
+      const isTargetedContact = Array.isArray(a.respondersNotified) &&
+        a.respondersNotified.some(id => id?.trim().toUpperCase() === cleanCurrentId);
+      return isSender || isTargetedContact;
+    })
     .slice(0, 2);
 
   // Maximum 6 contact slots for High Density grid
@@ -503,25 +508,6 @@ export const Calculator: React.FC<CalculatorProps> = ({
               </div>
             )}
 
-          </div>
-
-          {/* Firebase Setup Guide Quick Box (Matching Design Specification) */}
-          <div 
-            onClick={onOpenFirebaseGuide}
-            className="bg-blue-600/10 border border-blue-500/30 rounded-xl p-4 cursor-pointer hover:border-blue-500/50 transition-all"
-          >
-            <h3 className="text-xs font-bold text-blue-400 uppercase mb-2 tracking-tighter flex items-center justify-between">
-              <span>Firebase Setup Guide</span>
-              <Flame className="w-3.5 h-3.5 text-blue-400" />
-            </h3>
-            <p className="text-[11px] text-slate-400 mb-2">
-              To enable multi-device synchronization across Nigeria, configure your Firestore credentials in the project settings.
-            </p>
-            <ul className="text-[10px] space-y-1 text-slate-400">
-              <li>1. Open Firebase Console</li>
-              <li>2. Add Web App</li>
-              <li>3. Paste config to .env</li>
-            </ul>
           </div>
 
         </div>

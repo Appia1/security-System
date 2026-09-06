@@ -9,13 +9,12 @@ import { Calculator } from './components/Calculator';
 import { ContactsManager } from './components/ContactsManager';
 import { NotificationsCenter } from './components/NotificationsCenter';
 import { SafeWordSettings } from './components/SafeWordSettings';
-import { FirebaseGuideModal } from './components/FirebaseGuideModal';
 import { AuthModal } from './components/AuthModal';
 import { UserProfile, EmergencyContact, DistressAlert } from './types';
 import { StorageService } from './services/storage';
 import { globalVoiceDetector } from './services/voiceRecognition';
 import { subscribeToFirestoreAlerts } from './services/firebase';
-import { ShieldCheck, PhoneCall, Radio, AlertOctagon, Flame } from 'lucide-react';
+import { ShieldCheck, PhoneCall, Radio, AlertOctagon } from 'lucide-react';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => StorageService.getCurrentUser());
@@ -23,7 +22,7 @@ export default function App() {
     currentUser ? StorageService.getContactsForUser(currentUser.emergencyId) : []
   );
   const [alerts, setAlerts] = useState<DistressAlert[]>(() => StorageService.getAllAlerts());
-  const [currentTab, setCurrentTab] = useState<'calculator' | 'contacts' | 'notifications' | 'safewords' | 'firebase'>('calculator');
+  const [currentTab, setCurrentTab] = useState<'calculator' | 'contacts' | 'notifications' | 'safewords'>('calculator');
   const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
   const [isMicActive, setIsMicActive] = useState<boolean>(false);
 
@@ -140,7 +139,6 @@ export default function App() {
             onOpenSafeSettings={() => setCurrentTab('safewords')}
             onOpenContacts={() => setCurrentTab('contacts')}
             onOpenNotifications={() => setCurrentTab('notifications')}
-            onOpenFirebaseGuide={() => setCurrentTab('firebase')}
             onContactsUpdated={(updated) => setContacts(updated)}
           />
         )}
@@ -167,12 +165,6 @@ export default function App() {
             contacts={contacts}
             onUserUpdated={(updated) => setCurrentUser(updated)}
             onAlertDispatched={handleAlertDispatched}
-          />
-        )}
-
-        {currentTab === 'firebase' && (
-          <FirebaseGuideModal
-            onClose={() => setCurrentTab('calculator')}
           />
         )}
       </main>
@@ -206,12 +198,6 @@ export default function App() {
             <a href="tel:199" className="text-orange-400 hover:text-orange-300 font-bold flex items-center gap-1">
               <PhoneCall className="w-3 h-3" /> Police 199
             </a>
-            <button
-              onClick={() => setCurrentTab('firebase')}
-              className="text-amber-400 hover:text-amber-300 underline flex items-center gap-1 font-sans cursor-pointer"
-            >
-              <Flame className="w-3 h-3" /> Firebase Database Guide
-            </button>
           </div>
 
         </div>

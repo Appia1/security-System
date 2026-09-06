@@ -236,6 +236,21 @@ export class StorageService {
     }
   }
 
+  // Get alerts strictly filtered for a specific user:
+  // ONLY returns alerts where user is the sender OR was added as an emergency contact by the sender
+  static getAlertsForUser(userEmergencyId: string): DistressAlert[] {
+    const allAlerts = StorageService.getAllAlerts();
+    if (!userEmergencyId) return [];
+    const cleanId = userEmergencyId.trim().toUpperCase();
+
+    return allAlerts.filter(alert => {
+      const isSender = alert.senderEmergencyId?.trim().toUpperCase() === cleanId;
+      const isDesignatedResponder = Array.isArray(alert.respondersNotified) &&
+        alert.respondersNotified.some(id => id?.trim().toUpperCase() === cleanId);
+      return isSender || isDesignatedResponder;
+    });
+  }
+
   // Dispatches a new silent distress alert
   static dispatchDistressAlert(alert: DistressAlert): void {
     const alerts = StorageService.getAllAlerts();

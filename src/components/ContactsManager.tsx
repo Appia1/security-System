@@ -360,10 +360,10 @@ export const ContactsManager: React.FC<ContactsManagerProps> = ({
 
             {/* Information Notice */}
             <div className="mt-5 p-3 rounded-xl bg-[#09090B] border border-[#27272A] text-[11px] text-[#71717A] flex items-start gap-2.5">
-              <Info className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
               <div>
-                <span className="font-semibold text-[#E4E4E7]">Responders Synchronization: </span>
-                Whenever you trigger a distress event (Distress Button, Safe Word, or Safe Text), an encrypted alert with your live GPS location will immediately show in the &quot;Notifications&quot; tab of each added Emergency ID.
+                <span className="font-semibold text-emerald-400">Targeted Emergency Contacts Only: </span>
+                Whenever you trigger a distress event (Covert Calculator, Safe Word, or Safe Text), your encrypted distress message and live GPS location will ONLY be sent to the specific Emergency IDs added above (and yourself). Other users of the software can never view or intercept your location.
               </div>
             </div>
 

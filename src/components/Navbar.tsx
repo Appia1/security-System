@@ -10,7 +10,6 @@ import {
   Check, 
   UserCheck, 
   MapPin,
-  Flame,
   ChevronDown,
   LogOut
 } from 'lucide-react';
@@ -21,8 +20,8 @@ interface NavbarProps {
   currentUser: UserProfile;
   contactsCount: number;
   activeAlerts: DistressAlert[];
-  currentTab: 'calculator' | 'contacts' | 'notifications' | 'safewords' | 'firebase';
-  setCurrentTab: (tab: 'calculator' | 'contacts' | 'notifications' | 'safewords' | 'firebase') => void;
+  currentTab: 'calculator' | 'contacts' | 'notifications' | 'safewords';
+  setCurrentTab: (tab: 'calculator' | 'contacts' | 'notifications' | 'safewords') => void;
   onOpenAuth: () => void;
   onUserSwitch: (user: UserProfile) => void;
   onSignOut?: () => void;
@@ -44,7 +43,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [showSwitchMenu, setShowSwitchMenu] = useState(false);
 
   const allUsers = StorageService.getAllUsers();
-  const unreadAlertsCount = activeAlerts.filter(a => a.status === 'active').length;
+  // Only count active alerts that were sent by currentUser OR where currentUser is a designated responder
+  const unreadAlertsCount = activeAlerts.filter(a => {
+    if (a.status !== 'active') return false;
+    const cleanCurrentId = currentUser.emergencyId?.trim().toUpperCase();
+    const isSender = a.senderEmergencyId?.trim().toUpperCase() === cleanCurrentId;
+    const isTargetedContact = Array.isArray(a.respondersNotified) &&
+      a.respondersNotified.some(id => id?.trim().toUpperCase() === cleanCurrentId);
+    return isSender || isTargetedContact;
+  }).length;
 
   const handleCopyId = () => {
     navigator.clipboard.writeText(currentUser.emergencyId);
@@ -166,18 +173,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Mic className={`w-4 h-4 ${isMicActive ? 'text-emerald-400 animate-pulse' : 'text-purple-400'}`} />
               <span>Safe Word & Text</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentTab('firebase')}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                currentTab === 'firebase'
-                  ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40 shadow-sm'
-                  : 'text-blue-400/90 hover:text-blue-300 hover:bg-blue-600/10 border border-blue-500/20'
-              }`}
-            >
-              <Flame className="w-4 h-4 text-blue-400" />
-              <span>Firebase Guide</span>
             </button>
           </div>
 
@@ -321,16 +316,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Mic className={`w-4 h-4 ${isMicActive ? 'text-emerald-400 animate-pulse' : 'text-purple-400'}`} />
             <span className="text-[11px]">Duress</span>
-          </button>
-
-          <button
-            onClick={() => setCurrentTab('firebase')}
-            className={`flex flex-col sm:flex-row items-center justify-center gap-1 px-2 py-2 rounded-lg shrink-0 cursor-pointer min-h-[44px] transition-colors ${
-              currentTab === 'firebase' ? 'bg-blue-600/20 text-blue-400 font-semibold' : 'text-blue-400/80 hover:text-blue-300'
-            }`}
-          >
-            <Flame className="w-4 h-4 text-blue-400" />
-            <span className="text-[11px]">Sync</span>
           </button>
         </div>
 
